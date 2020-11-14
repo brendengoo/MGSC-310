@@ -2,3 +2,7 @@
 #Brenden
 #Garett, whats up
 #emily 
+
+
+Airlines_df <- Airlines_df %>% mutate( satisfaction= factor(satisfaction), 
+    Customer.Type = factor(Customer.Type), Class = factor(Class), Type.of.Travel = factor(Type.of.Travel), Seat.comfort = factor (Seat.comfort), Departure.Arrival.time.convenient= factor(Departure.Arrival.time.convenient), Food.and.drink= factor(Food.and.drink), Gate.location= factor(Gate.location), Inflight.wifi.service= factor(Inflight.wifi.service), Inflight.entertainment=factor(Inflight.entertainment), Online.support= factor(Online.support), Ease.of.Online.booking= factor(Ease.of.Online.booking), On.board.service= factor(On.board.service), Baggage.handling= factor(Baggage.handling),Checkin.service=factor(Checkin.service),Cleanliness=factor(Cleanliness),Online.boarding=factor(Online.boarding))
