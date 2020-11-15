@@ -12,3 +12,5 @@ Airlines_df <- Airlines_df %>% mutate( satisfaction= factor(satisfaction),
     Ease.of.Online.booking= factor(Ease.of.Online.booking), On.board.service= factor(On.board.service), 
     Baggage.handling= factor(Baggage.handling),Checkin.service=factor(Checkin.service),Cleanliness=factor(Cleanliness),
     Online.boarding=factor(Online.boarding))
+    
+    Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right = TRUE)
