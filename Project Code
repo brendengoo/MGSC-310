@@ -16,3 +16,7 @@ On.board.service= factor(On.board.service), Baggage.handling= factor(Baggage.han
 Dummy_satisfied = ifelse(satisfaction == "satisfied",1,0))
 
 Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right = TRUE)
+
+Airline_split <- initial_split(Airlines_clean, p=0.8)
+Airline_train <- training(Airline_split)
+Airline_test <- testing(Airline_split)
