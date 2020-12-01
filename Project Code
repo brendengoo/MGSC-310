@@ -25,7 +25,8 @@ Leg.room.service = factor(Leg.room.service))
 
 Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right = TRUE)
 
-Airline_split <- initial_split(Airlines_clean, p=0.8) ##if 0.8 does not run (it didnt on my laptop, try selecting a very small sample like 0.05 or 0.01 for P) 
+Airline_split <- initial_split(Airlines_clean, p=0.8) 
+                        ##if 0.8 does not run (it didnt on my laptop, try selecting a very small sample like 0.05 or 0.01 for P)
 Airline_train <- training(Airline_split)
 Airline_test <- testing(Airline_split)
 
