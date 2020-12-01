@@ -3,7 +3,7 @@
 #Garett, whats up
 #emily 
 
-
+# Cleaning data
 Airlines_clean <- Airlines_df %>% mutate(
 satisfaction = factor(satisfaction),
 Customer.Type = factor(Customer.Type), 
@@ -25,11 +25,15 @@ Leg.room.service = factor(Leg.room.service))
 
 Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right = TRUE)
 
+
+# Splitting data into train/test 
 Airline_split <- initial_split(Airlines_clean, p=0.8) 
                         ##if 0.8 does not run (it didnt on my laptop, try selecting a very small sample like 0.05 or 0.01 for P)
 Airline_train <- training(Airline_split)
 Airline_test <- testing(Airline_split)
 
+
+# Elastic Model
 enet_mod1 <- cva.glmnet(satisfaction ~ .,
                        data = Airline_train, 
                        alpha_list = seq(0,1, by = 0.1),
@@ -48,6 +52,8 @@ get_alpha <- function(fit) {
 best_alpha <- get_alpha(enet_mod1)
 print(best_alpha)
 
+
+# Lasso model
 lasso_mod1<- cv.glmnet(satisfaction ~ . , 
                         data = Airline_train, 
                        alpha = 1,
@@ -65,4 +71,14 @@ results_lasso <- data.frame(c(complete_cases_train$satisfaction,complete_cases_t
 as.factor(c(rep("Train", length(preds_train_lasso)),rep("Test", length(preds_test_lasso))))) %>% 
           rename("true" = 1, "preds" = 2, "test_train" = 3)
           
-data.frame(results_lasso)       
+data.frame(results_lasso)   
+
+
+# Logistci model
+Airlines_logit <- glm(satisfaction ~ .,
+                  family = binomial,
+                  data = Airline_train)
+
+summary(Airlines_logit)
+
+# I think we have too many categories and should try to figure out which ones we should take out. The output of our model has some NA's where there shouldn't be.
