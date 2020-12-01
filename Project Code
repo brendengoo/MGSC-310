@@ -4,20 +4,28 @@
 #emily 
 
 
-Airlines_clean <- Airlines_df %>% mutate( #satisfaction = as.integer(satisfaction),
-Customer.Type = factor(Customer.Type), Class = factor(Class), 
-Type.of.Travel = factor(Type.of.Travel), Seat.comfort = factor (Seat.comfort),
-Departure.Arrival.time.convenient= factor(Departure.Arrival.time.convenient), 
-Food.and.drink= factor(Food.and.drink), Gate.location= factor(Gate.location), 
+Airlines_clean <- Airlines_df %>% mutate(
+satisfaction = factor(satisfaction),
+Customer.Type = factor(Customer.Type), 
+Class = factor(Class), 
+Type.of.Travel = factor(Type.of.Travel), 
+Seat.comfort = factor (Seat.comfort), 
+Departure.Arrival.time.convenient= factor(Departure.Arrival.time.convenient), Food.and.drink= factor(Food.and.drink), 
+Gate.location= factor(Gate.location), 
 Inflight.wifi.service= factor(Inflight.wifi.service), Inflight.entertainment=factor(Inflight.entertainment), 
-Online.support= factor(Online.support), Ease.of.Online.booking= factor(Ease.of.Online.booking), 
-On.board.service= factor(On.board.service), Baggage.handling= factor(Baggage.handling)
-,Checkin.service=factor(Checkin.service),Cleanliness=factor(Cleanliness),Online.boarding=factor(Online.boarding), 
-Dummy_satisfied = ifelse(satisfaction == "satisfied",1,0))
+Online.support= factor(Online.support), 
+Ease.of.Online.booking= factor(Ease.of.Online.booking), 
+On.board.service= factor(On.board.service), 
+Baggage.handling= factor(Baggage.handling),
+Checkin.service=factor(Checkin.service),
+Cleanliness=factor(Cleanliness),
+Online.boarding=factor(Online.boarding),
+Gender = factor(Gender),
+Leg.room.service = factor(Leg.room.service))
 
 Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right = TRUE)
 
-Airline_split <- initial_split(Airlines_clean, p=0.8)
+Airline_split <- initial_split(Airlines_clean, p=0.8) ##if 0.8 does not run (it didnt on my laptop, try selecting a very small sample like 0.05 or 0.01 for P) 
 Airline_train <- training(Airline_split)
 Airline_test <- testing(Airline_split)
 
@@ -25,3 +33,35 @@ enet_mod1 <- cva.glmnet(satisfaction ~ .,
                        data = Airline_train, 
                        alpha_list = seq(0,1, by = 0.1),
                       family = "binomial")
+                      
+minlossplot(enet_mod1,
+            cv.type = "min")
+
+get_alpha <- function(fit) {
+  alpha <- fit$alpha
+  error <- sapply(fit$modlist, 
+                  function(mod) {min(mod$cvm)})
+  alpha[which.min(error)]
+}
+
+best_alpha <- get_alpha(enet_mod1)
+print(best_alpha)
+
+lasso_mod1<- cv.glmnet(satisfaction ~ . , 
+                        data = Airline_train, 
+                       alpha = 1,
+                       family = "binomial")
+                       
+preds_train_lasso <- predict(lasso_mod1, s= lasso_mod1$lambda.1se, newdata=Airline_train)
+
+preds_test_lasso <- predict(lasso_mod1, s= lasso_mod1$lambda.1se, newdata = Airline_test)
+
+complete_cases_train <- drop_na(Airline_train)
+
+complete_cases_test <- drop_na(Airline_test)
+
+results_lasso <- data.frame(c(complete_cases_train$satisfaction,complete_cases_test$satisfaction),c(preds_train_lasso, preds_test_lasso), 
+as.factor(c(rep("Train", length(preds_train_lasso)),rep("Test", length(preds_test_lasso))))) %>% 
+          rename("true" = 1, "preds" = 2, "test_train" = 3)
+          
+data.frame(results_lasso)       
