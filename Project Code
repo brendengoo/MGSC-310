@@ -20,3 +20,8 @@ Airlines_clean$Age <- cut(Airlines_clean$Age, breaks = seq(10,100,by=15),right =
 Airline_split <- initial_split(Airlines_clean, p=0.8)
 Airline_train <- training(Airline_split)
 Airline_test <- testing(Airline_split)
+
+Simple Linear Model
+Airplines_mod1 <- lm(Dummy_satisfied ~., 
+           data = Airline_train)
+summary(Airplines_mod1)
