@@ -65,4 +65,103 @@ results_lasso <- data.frame(c(complete_cases_train$satisfaction,complete_cases_t
 as.factor(c(rep("Train", length(preds_train_lasso)),rep("Test", length(preds_test_lasso))))) %>% 
           rename("true" = 1, "preds" = 2, "test_train" = 3)
           
-data.frame(results_lasso)       
+data.frame(results_lasso)
+
+# Logistic Model
+
+```{r}
+Airlines_logit <- glm(satisfaction ~ Food.and.drink + Inflight.entertainment + Seat.comfort + Online.support + Type.of.Travel,
+                  family = binomial,
+                  data = Airline_train)
+
+summary(Airlines_logit)
+```
+
+# Exponentiate the fitted coefficient vector and print the results
+```{r}
+exp(Airlines_logit$coefficients)
+```
+
+# Predicted probabilities for the test and training sets
+```{r}
+train_complete_cases <- Airline_train %>% filter(complete.cases(satisfaction))
+
+preds_train <- predict(Airlines_logit, type = "response")
+
+test_complete_cases <- Airline_test %>% filter(complete.cases(satisfaction))
+
+preds_test <- predict(Airlines_logit, newdata = test_complete_cases, type = "response")
+```
+
+# Results_train and results_test
+```{r}
+library('yardstick')
+results_train <- data.frame(
+
+  `truth` = Airline_train%>% 
+
+     filter(!is.na(satisfaction),
+            !is.na(Food.and.drink),
+            !is.na(Inflight.entertainment), 
+            !is.na(Seat.comfort),
+            !is.na(Online.support),
+            !is.na(Type.of.Travel)) %>% 
+
+    select(satisfaction) %>%
+
+    mutate(satisfaction = as.numeric(satisfaction)),
+
+   `Class1` =  preds_train,
+
+  `type` = rep("train",length(preds_train))
+  ) %>% rename('truth' = 1)
+results_test <- data.frame(
+
+  `truth` = Airline_test   %>% 
+
+     filter(!is.na(satisfaction),
+            !is.na(Food.and.drink),
+            !is.na(Inflight.entertainment), 
+            !is.na(Seat.comfort),
+            !is.na(Online.support),
+            !is.na(Type.of.Travel)) %>% 
+
+    select(satisfaction) %>% 
+
+    mutate(satisfaction = as.numeric(satisfaction)),
+
+   `Class1` =  preds_test,
+
+  `type` = rep("test",length(preds_test))
+ 
+  )  %>% rename('truth' = 1)
+
+head(results_train)
+head(results_test)
+```
+
+# Produce two ROC plots
+```{r}
+library('ggplot2')
+library('plotROC')
+train_ROC <- ggplot(results_train, 
+            aes(m = Class1, d = truth)) + 
+  geom_roc(labelsize = 3.5, 
+           cutoffs.at = 
+             c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
+  theme_minimal(base_size = 16)
+test_ROC <- ggplot(results_test, 
+            aes(m = Class1, d = truth)) + 
+  geom_roc(labelsize = 3.5, 
+           cutoffs.at = 
+             c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
+  theme_minimal(base_size = 16)
+
+print(train_ROC)
+print(test_ROC)
+```
+# Calculate the AUC for the ROC curve in the testing and trainig sets
+```{r}
+calc_auc(train_ROC)
+calc_auc(test_ROC)
+```
