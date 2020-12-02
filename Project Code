@@ -219,3 +219,24 @@ cm_test <- conf_mat(results_test2,
 print(cm_train)
 print(cm_test)
 ```
+# create a results train and test
+results_train <- data.frame(
+  predicted = preds_train,
+  actual = Airline_train %>% 
+    filter(complete.cases(Seat.comfort,Gate.location, Ease.of.Online.booking, Leg.room.service, Cleanliness, Departure.Delay.in.Minutes, Class, Inflight.wifi.service, Inflight.entertainment, On.board.service, Age)) %>% 
+    select(satisfaction),
+  type = rep("train", length(preds_train))
+) %>% 
+  rename(`predicted` = 1, `actual` = 2, `type` = 3) %>% mutate(predicted = as.factor(ifelse(predicted == 1, "1", "0")))%>% mutate(actual = as.factor(ifelse(actual == 2, "1", "0")))
+
+head(preds_test)
+str(predicted)
+
+results_test <- data.frame(
+  predicted = preds_test,
+  actual = Airline_test %>% 
+    filter(complete.cases(Seat.comfort,Gate.location, Ease.of.Online.booking, Leg.room.service, Cleanliness, Departure.Delay.in.Minutes, Class, Inflight.wifi.service, Inflight.entertainment, On.board.service, Age)) %>% 
+    select(satisfaction),
+  type = rep("test", length(preds_test))
+) %>% 
+  rename(`predicted` = 1, `actual` = 2, `type` = 3) %>% mutate(actual = as.factor(ifelse(actual == 2, "1", "0")))
