@@ -65,4 +65,159 @@ results_lasso <- data.frame(c(complete_cases_train$satisfaction,complete_cases_t
 as.factor(c(rep("Train", length(preds_train_lasso)),rep("Test", length(preds_test_lasso))))) %>% 
           rename("true" = 1, "preds" = 2, "test_train" = 3)
           
-data.frame(results_lasso)       
+data.frame(results_lasso)
+
+
+# Logistic model
+```{r}
+Airlines_logit <- glm(Seat.comfort + Gate.location + Ease.of.Online.booking + Leg.room.service + Cleanliness + Departure.Delay.in.Minutes 
++ Class 
++ Inflight.wifi.service + Inflight.entertainment 
++ On.board.service + Age,
+                  family = binomial,
+                  data = Airline_train)
+
+summary(Airlines_logit)
+```
+
+# Exponentiate the fitted coefficient vector and print the results
+```{r}
+exp(Airlines_logit$coefficients)
+```
+
+# Predicted probabilities for the test and training sets
+```{r}
+train_complete_cases <- Airline_train %>% filter(complete.cases(satisfaction))
+
+preds_train <- predict(Airlines_logit, type = "response")
+
+test_complete_cases <- Airline_test %>% filter(complete.cases(satisfaction))
+
+preds_test <- predict(Airlines_logit, newdata = test_complete_cases, type = "response")
+```
+
+# Results_train and results_test
+```{r}
+library('yardstick')
+results_train <- data.frame(
+
+  `truth` = Airline_train%>% 
+
+     filter(!is.na(satisfaction),
+            !is.na(Seat.comfort),
+            !is.na(Gate.location), 
+            !is.na(Ease.of.Online.bookin),
+            !is.na(Leg.room.service),
+            !is.na(Cleanliness),
+            !is.na(Departure.Delay.in.Minutes),
+            !is.na(Class),
+            !is.na(Inflight.wifi.service),
+            !is.na(Inflight.entertainment),
+            !is.na(On.board.service),
+            !is.na(Age)) %>% 
+
+    select(satisfaction) %>%
+
+    mutate(satisfaction = as.numeric(satisfaction)),
+
+   `Class1` =  preds_train,
+
+  `type` = rep("train",length(preds_train))
+  ) %>% rename('truth' = 1)
+results_test <- data.frame(
+
+  `truth` = Airline_test   %>% 
+
+     filter(!is.na(satisfaction),
+            !is.na(Seat.comfort),
+            !is.na(Gate.location), 
+            !is.na(Ease.of.Online.bookin),
+            !is.na(Leg.room.service),
+            !is.na(Cleanliness),
+            !is.na(Departure.Delay.in.Minutes),
+            !is.na(Class),
+            !is.na(Inflight.wifi.service),
+            !is.na(Inflight.entertainment),
+            !is.na(On.board.service),
+            !is.na(Age)) %>% 
+
+    select(satisfaction) %>% 
+
+    mutate(satisfaction = as.numeric(satisfaction)),
+
+   `Class1` =  preds_test,
+
+  `type` = rep("test",length(preds_test))
+ 
+  )  %>% rename('truth' = 1)
+
+head(results_train)
+head(results_test)
+```
+
+# Produce two ROC plots
+```{r}
+library('ggplot2')
+library('plotROC')
+train_ROC <- ggplot(results_train, 
+            aes(m = Class1, d = truth)) + 
+  geom_roc(labelsize = 3.5, 
+           cutoffs.at = 
+             c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
+  theme_minimal(base_size = 16)
+test_ROC <- ggplot(results_test, 
+            aes(m = Class1, d = truth)) + 
+  geom_roc(labelsize = 3.5, 
+           cutoffs.at = 
+             c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
+  theme_minimal(base_size = 16)
+
+print(train_ROC)
+print(test_ROC)
+```
+# Calculate the AUC for the ROC curve in the testing and trainig sets
+```{r}
+calc_auc(train_ROC)
+calc_auc(test_ROC)
+```
+
+```{r}
+temp_test <- data_frame (satisfaction_09 = ifelse(preds_test > 0.9, 1,0),
+                                          satisfaction_08 = ifelse(preds_test > 0.8, 1,0),
+                                          satisfaction_07 = ifelse(preds_test > 0.7, 1,0),
+                                          satisfaction_06 = ifelse(preds_test > 0.6, 1,0),
+                                          satisfaction_05 = ifelse(preds_test > 0.5, 1,0),
+                                          satisfaction_04 = ifelse(preds_test > 0.4, 1,0),
+                                          satisfaction_03 = ifelse(preds_test > 0.3, 1,0),
+                                          satisfaction_02 = ifelse(preds_test > 0.2, 1,0),
+                                          satisfaction_01 =ifelse(preds_test > 0.1, 1,0)
+                                        
+    
+)
+
+map(temp_test,mean)
+```
+```{r}
+results_train2 <- data.frame( `truth` = as.factor(train_complete_cases$satisfaction),
+                            `Class1` =  preds_train, 
+                            `Class2` = 1 - preds_train,  
+                            `predicted` = as.factor(ifelse(preds_train > 0.1,1,0)))
+results_test2 <- data.frame( `truth` = as.factor(test_complete_cases$satisfaction),
+                            `Class1` =  preds_test, 
+                            `Class2` = 1 - preds_test,  
+                            `predicted` = as.factor(ifelse(preds_test > 0.1,1,0)))
+
+head(results_train2)
+head(results_test2)
+```
+
+```{r}
+cm_train <- conf_mat(results_train2, 
+               truth = truth,
+               estimate = predicted)
+cm_test <- conf_mat(results_test2, 
+               truth = truth,
+               estimate = predicted)
+print(cm_train)
+print(cm_test)
+```
