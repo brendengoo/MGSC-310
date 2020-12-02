@@ -70,10 +70,8 @@ data.frame(results_lasso)
 
 # Logistic model
 ```{r}
-Airlines_logit <- glm(Seat.comfort + Gate.location + Ease.of.Online.booking + Leg.room.service + Cleanliness + Departure.Delay.in.Minutes 
-+ Class 
-+ Inflight.wifi.service + Inflight.entertainment 
-+ On.board.service + Age,
+Airlines_logit <- glm(satisfaction ~ Seat.comfort + Gate.location + Ease.of.Online.booking + Leg.room.service + Cleanliness + Departure.Delay.in.Minutes 
++ Class + Inflight.wifi.service + Inflight.entertainment + On.board.service + Age,
                   family = binomial,
                   data = Airline_train)
 
