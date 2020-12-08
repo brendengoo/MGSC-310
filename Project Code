@@ -68,30 +68,19 @@ as.factor(c(rep("Train", length(preds_train_lasso)),rep("Test", length(preds_tes
 data.frame(results_lasso)
 
 
-# Logistic model
+# Logistic Model
+
 ```{r}
+library(glmnet)
+library(glmnetUtils)
+set.seed(1818)
+
 Airlines_logit <- glm(satisfaction ~ Seat.comfort + Gate.location + Ease.of.Online.booking + Leg.room.service + Cleanliness + Departure.Delay.in.Minutes 
 + Class + Inflight.wifi.service + Inflight.entertainment + On.board.service + Age,
                   family = binomial,
                   data = Airline_train)
-
 summary(Airlines_logit)
 ```
-
-# Exponentiate the fitted coefficient vector and print the results
-```{r}
-exp(Airlines_logit$coefficients)
-```
-
-# Predicted probabilities for the test and training sets
-```{r}
-train_complete_cases <- Airline_train %>% filter(complete.cases(satisfaction))
-
-preds_train <- predict(Airlines_logit, type = "response")
-
-test_complete_cases <- Airline_test %>% filter(complete.cases(satisfaction))
-
-preds_test <- predict(Airlines_logit, newdata = test_complete_cases, type = "response")
 ```
 
 # Results_train and results_test
@@ -104,7 +93,7 @@ results_train <- data.frame(
      filter(!is.na(satisfaction),
             !is.na(Seat.comfort),
             !is.na(Gate.location), 
-            !is.na(Ease.of.Online.bookin),
+            !is.na(Ease.of.Online.booking),
             !is.na(Leg.room.service),
             !is.na(Cleanliness),
             !is.na(Departure.Delay.in.Minutes),
@@ -129,7 +118,7 @@ results_test <- data.frame(
      filter(!is.na(satisfaction),
             !is.na(Seat.comfort),
             !is.na(Gate.location), 
-            !is.na(Ease.of.Online.bookin),
+            !is.na(Ease.of.Online.booking),
             !is.na(Leg.room.service),
             !is.na(Cleanliness),
             !is.na(Departure.Delay.in.Minutes),
@@ -162,13 +151,13 @@ train_ROC <- ggplot(results_train,
   geom_roc(labelsize = 3.5, 
            cutoffs.at = 
              c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
-  theme_minimal(base_size = 16)
+  theme_minimal(base_size = 16) + ggtitle("Train ROC Plot")
 test_ROC <- ggplot(results_test, 
             aes(m = Class1, d = truth)) + 
   geom_roc(labelsize = 3.5, 
            cutoffs.at = 
              c(0.99,0.9,0.7,0.5,0.3,0.1,0)) +
-  theme_minimal(base_size = 16)
+  theme_minimal(base_size = 16)+ ggtitle("Test ROC Plot")
 
 print(train_ROC)
 print(test_ROC)
@@ -179,22 +168,46 @@ calc_auc(train_ROC)
 calc_auc(test_ROC)
 ```
 
+#Prediction for train and test
 ```{r}
-temp_test <- data_frame (satisfaction_09 = ifelse(preds_test > 0.9, 1,0),
-                                          satisfaction_08 = ifelse(preds_test > 0.8, 1,0),
-                                          satisfaction_07 = ifelse(preds_test > 0.7, 1,0),
-                                          satisfaction_06 = ifelse(preds_test > 0.6, 1,0),
-                                          satisfaction_05 = ifelse(preds_test > 0.5, 1,0),
-                                          satisfaction_04 = ifelse(preds_test > 0.4, 1,0),
-                                          satisfaction_03 = ifelse(preds_test > 0.3, 1,0),
-                                          satisfaction_02 = ifelse(preds_test > 0.2, 1,0),
-                                          satisfaction_01 =ifelse(preds_test > 0.1, 1,0)
-                                        
-    
-)
+preds_train_logit <- predict(Airlines_logit, type = "response")
 
-map(temp_test,mean)
+preds_test_logit <- predict(Airlines_logit, type= "response",newdata= Airline_test)
+head(preds_test_logit)
 ```
+
+```{r}
+results_train_logit <- data.frame(`truth` = Airline_train$satisfaction,
+                                  `class1` =preds_train_logit,
+                                  `Class2` = 1 - preds_train_logit,
+                                  `type` = rep("train", length(preds_train_logit)),
+                                  `predicted` = as.factor(ifelse(preds_train_logit > 0.5,1,0))) %>% mutate(truth = as.factor(ifelse(truth == "satisfied", "1", "0")))
+
+results_test_logit <- data.frame (
+  `truth` = Airline_test$satisfaction,
+  `class1` = preds_test_logit,
+  `Class2` = 1 - preds_test_logit,
+  `type` = rep("test", length(preds_test_logit)),
+  `predicted` = as.factor(ifelse(preds_test_logit > 0.5, 1, 0))) %>% mutate(truth = as.factor(ifelse(truth == "satisfied", "1", "0")))
+```
+
+# Confusion Matrix
+```{r}
+train_conf_logit <- conf_mat(results_train_logit,
+                             truth = truth,
+                             estimate = predicted)
+
+test_conf_logit <- conf_mat(results_test_logit,
+                            truth = truth,
+                            estimate = predicted)
+
+print(train_conf_logit)
+print(test_conf_logit)
+autoplot(train_conf_logit, "heatmap")
+autoplot(test_conf_logit, "heatmap")
+```
+# End of Logistic Model
+
 ```{r}
 results_train2 <- data.frame( `truth` = as.factor(train_complete_cases$satisfaction),
                             `Class1` =  preds_train, 
